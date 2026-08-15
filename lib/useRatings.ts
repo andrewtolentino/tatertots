@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import type { ServiceMode } from "./database.types";
+import type { ServiceMode, TextureTag } from "./database.types";
 
 export type RatingWithWho = {
   id: string;
@@ -12,7 +12,13 @@ export type RatingWithWho = {
   notes: string | null;
   photo_path: string | null;
   visited_on: string;
-  detail: Record<string, number> | null;
+  presentation: number | null;
+  flavor: number | null;
+  creativity: number | null;
+  value_rating: number | null;
+  price: number | null;
+  texture: TextureTag[] | null;
+  order_text: string | null;
   service_mode: ServiceMode | null;
   profiles: { display_name: string } | null;
 };

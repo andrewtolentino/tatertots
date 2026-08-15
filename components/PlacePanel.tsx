@@ -2,10 +2,15 @@
 
 import { useState } from "react";
 import type { PlaceWithItems } from "@/lib/usePlaces";
-import { POTATO_LABELS, SERVICE_MODE_LABELS } from "@/lib/database.types";
+import {
+  POTATO_LABELS,
+  RATING_AXES,
+  SERVICE_MODE_LABELS,
+} from "@/lib/database.types";
 import { RANKED_THRESHOLD, formatScore, scoreColor } from "@/lib/score";
 import { publicPhotoUrl, useRatings } from "@/lib/useRatings";
 import { useAuth } from "@/lib/useAuth";
+import { firstName } from "@/lib/name";
 import { RateForm } from "./RateForm";
 
 export function PlacePanel({
@@ -129,26 +134,55 @@ export function PlacePanel({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">
-                    {rating.profiles?.display_name ?? "Someone"}
+                    {firstName(rating.profiles?.display_name)}
                     <span className="ml-2 text-xs font-normal text-muted">
                       {rating.visited_on}
                     </span>
                   </p>
+
+                  {rating.order_text && (
+                    <p className="mt-0.5 text-xs text-muted">
+                      Ordered: {rating.order_text}
+                    </p>
+                  )}
+
                   <ul className="mt-1 flex flex-wrap gap-1">
                     {rating.service_mode && (
                       <li className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted">
                         {SERVICE_MODE_LABELS[rating.service_mode]}
                       </li>
                     )}
-                    {Object.entries(rating.detail ?? {}).map(([axis, value]) => (
+                    {rating.price != null && (
+                      <li className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted">
+                        {"$".repeat(rating.price)}
+                      </li>
+                    )}
+                    {(rating.texture ?? []).map((tag) => (
                       <li
-                        key={axis}
-                        className="rounded-md bg-surface-hover px-1.5 py-0.5 text-xs text-muted capitalize"
+                        key={tag}
+                        className="rounded-full border border-border px-2 py-0.5 text-xs text-muted capitalize"
                       >
-                        {axis} <span className="tabular-nums">{value}</span>
+                        {tag}
                       </li>
                     ))}
                   </ul>
+
+                  <ul className="mt-1 flex flex-wrap gap-1">
+                    {RATING_AXES.map(({ key, label }) =>
+                      rating[key] == null ? null : (
+                        <li
+                          key={key}
+                          className="rounded-md bg-surface-hover px-1.5 py-0.5 text-xs text-muted"
+                        >
+                          {label}{" "}
+                          <span className="tabular-nums">
+                            {formatScore(rating[key])}
+                          </span>
+                        </li>
+                      ),
+                    )}
+                  </ul>
+
                   {rating.notes && (
                     <p className="mt-1 text-sm text-muted">{rating.notes}</p>
                   )}

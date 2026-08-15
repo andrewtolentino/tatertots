@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { firstName } from "@/lib/name";
 
 /*
  * Password sign-in rather than magic links. Supabase's built-in mailer allows
@@ -53,7 +54,7 @@ export function SignIn() {
     return (
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="min-w-0 truncate text-muted">
-          {profile?.display_name ?? user.email}
+          {profile ? firstName(profile.display_name) : user.email}
           {!isCrew && " · read only"}
         </span>
         <button

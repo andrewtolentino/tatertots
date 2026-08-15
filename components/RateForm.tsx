@@ -3,15 +3,22 @@
 import { useState } from "react";
 import { supabase, isPermissionDenied } from "@/lib/supabase";
 import { prepareImage } from "@/lib/image";
-import { scoreColor } from "@/lib/score";
-import { SERVICE_MODE_LABELS, type ServiceMode } from "@/lib/database.types";
+import { MAX_SCORE, MIN_SCORE, SCORE_STEP, scoreColor } from "@/lib/score";
+import {
+  RATING_AXES,
+  SERVICE_MODE_LABELS,
+  TEXTURE_TAGS,
+  type RatingAxis,
+  type ServiceMode,
+  type TextureTag,
+} from "@/lib/database.types";
 import type { ItemWithScore } from "@/lib/usePlaces";
-
-const DETAIL_AXES = ["crispiness", "taste", "color"] as const;
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+const MIDPOINT = 3;
 
 export function RateForm({
   item,
@@ -24,19 +31,30 @@ export function RateForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
-  const [score, setScore] = useState(7);
+  const [score, setScore] = useState(MIDPOINT);
+  const [axes, setAxes] = useState<Record<RatingAxis, number>>({
+    presentation: MIDPOINT,
+    flavor: MIDPOINT,
+    creativity: MIDPOINT,
+    value_rating: MIDPOINT,
+  });
+  const [price, setPrice] = useState(2);
+  const [texture, setTexture] = useState<TextureTag[]>([]);
+  const [orderText, setOrderText] = useState("");
   const [notes, setNotes] = useState("");
   const [visitedOn, setVisitedOn] = useState(today());
-  const [file, setFile] = useState<File | null>(null);
   const [serviceMode, setServiceMode] = useState<ServiceMode>("dine_in");
-  // The axes are part of every review now, so they start at a midpoint and are
-  // always saved. The number beside each slider shows exactly what will be
-  // recorded, so an untouched 5 is visible rather than silent.
-  const [detail, setDetail] = useState<Record<string, number>>(
-    Object.fromEntries(DETAIL_AXES.map((axis) => [axis, 5])),
-  );
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleTexture(tag: TextureTag) {
+    setTexture((current) =>
+      current.includes(tag)
+        ? current.filter((t) => t !== tag)
+        : [...current, tag],
+    );
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -67,10 +85,15 @@ export function RateForm({
         item_id: item.id,
         user_id: userId,
         score,
+        ...axes,
+        price,
+        // An empty array is a real answer ("no texture stood out"); null would
+        // mean the question was never asked.
+        texture,
+        order_text: orderText.trim() || null,
         notes: notes.trim() || null,
         photo_path: photoPath,
         visited_on: visitedOn,
-        detail,
         service_mode: serviceMode,
       },
       { onConflict: "item_id,user_id,visited_on" },
@@ -109,9 +132,9 @@ export function RateForm({
         <input
           id="score"
           type="range"
-          min={1}
-          max={10}
-          step={0.5}
+          min={MIN_SCORE}
+          max={MAX_SCORE}
+          step={SCORE_STEP}
           value={score}
           onChange={(e) => setScore(Number(e.target.value))}
           className="mt-1 w-full accent-amber-500"
@@ -119,28 +142,90 @@ export function RateForm({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-3">
-        {DETAIL_AXES.map((axis) => (
-          <div key={axis} className="flex items-center gap-3">
-            <label htmlFor={axis} className="w-20 text-xs capitalize">
-              {axis}
+        {RATING_AXES.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-3">
+            <label htmlFor={key} className="w-24 shrink-0 text-xs">
+              {label}
             </label>
             <input
-              id={axis}
+              id={key}
               type="range"
-              min={1}
-              max={10}
-              step={1}
-              value={detail[axis]}
+              min={MIN_SCORE}
+              max={MAX_SCORE}
+              step={SCORE_STEP}
+              value={axes[key]}
               onChange={(e) =>
-                setDetail((d) => ({ ...d, [axis]: Number(e.target.value) }))
+                setAxes((a) => ({ ...a, [key]: Number(e.target.value) }))
               }
               className="flex-1 accent-amber-500"
             />
-            <span className="w-4 text-right text-xs tabular-nums text-muted">
-              {detail[axis]}
+            <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted">
+              {axes[key].toFixed(1)}
             </span>
           </div>
         ))}
+      </div>
+
+      {/* Multi-select, not a scale: a tot can be crispy and dry at once, and
+          "mushy" and "dry" are different failures. */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium">Texture</span>
+        <div className="flex flex-wrap gap-1.5">
+          {TEXTURE_TAGS.map((tag) => {
+            const on = texture.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggleTexture(tag)}
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+                  on
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted hover:text-foreground"
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium">Price</span>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((level) => (
+            <button
+              key={level}
+              type="button"
+              aria-label={`${level} of 5`}
+              aria-pressed={price === level}
+              onClick={() => setPrice(level)}
+              className={`h-8 flex-1 rounded-md border text-sm font-semibold transition-colors ${
+                level <= price
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted hover:text-foreground"
+              }`}
+            >
+              $
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="order" className="text-xs font-medium">
+          Order
+        </label>
+        <input
+          id="order"
+          type="text"
+          value={orderText}
+          onChange={(e) => setOrderText(e.target.value)}
+          placeholder="Truffle parm tots, large"
+          className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
+        />
       </div>
 
       {/* Takeout tots steam in the box on the way home, so this is context for
@@ -221,14 +306,14 @@ export function RateForm({
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+          className="h-9 flex-1 rounded-lg bg-foreground px-3 text-sm font-medium text-background disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save rating"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-3 py-2 text-sm text-muted hover:text-foreground"
+          className="h-9 rounded-lg px-3 text-sm text-muted hover:text-foreground"
         >
           Cancel
         </button>

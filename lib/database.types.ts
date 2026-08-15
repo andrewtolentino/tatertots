@@ -49,6 +49,34 @@ export type Item = {
   created_at: string;
 };
 
+export type TextureTag =
+  | "crispy"
+  | "crunchy"
+  | "tender"
+  | "soft"
+  | "mushy"
+  | "dry";
+
+/** Ordered as they appear on the paper scorecard. */
+export const TEXTURE_TAGS: TextureTag[] = [
+  "crispy",
+  "crunchy",
+  "tender",
+  "soft",
+  "mushy",
+  "dry",
+];
+
+/** The card's four tot scales, besides the overall score. */
+export const RATING_AXES = [
+  { key: "presentation", label: "Presentation" },
+  { key: "flavor", label: "Flavor" },
+  { key: "creativity", label: "Creativity" },
+  { key: "value_rating", label: "Value" },
+] as const;
+
+export type RatingAxis = (typeof RATING_AXES)[number]["key"];
+
 export type ServiceMode = "dine_in" | "takeout";
 
 export const SERVICE_MODE_LABELS: Record<ServiceMode, string> = {
@@ -64,7 +92,13 @@ export type Rating = {
   notes: string | null;
   photo_path: string | null;
   visited_on: string;
-  detail: Record<string, number> | null;
+  presentation: number | null;
+  flavor: number | null;
+  creativity: number | null;
+  value_rating: number | null;
+  price: number | null;
+  texture: TextureTag[] | null;
+  order_text: string | null;
   service_mode: ServiceMode | null;
   created_at: string;
 };
