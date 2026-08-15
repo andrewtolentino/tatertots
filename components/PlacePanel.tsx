@@ -10,7 +10,7 @@ import {
 import { RANKED_THRESHOLD, formatScore, scoreColor } from "@/lib/score";
 import { publicPhotoUrl, useRatings } from "@/lib/useRatings";
 import { useAuth } from "@/lib/useAuth";
-import { firstName } from "@/lib/name";
+import { raterLabel } from "@/lib/name";
 import { RateForm } from "./RateForm";
 
 export function PlacePanel({
@@ -134,7 +134,7 @@ export function PlacePanel({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">
-                    {firstName(rating.profiles?.display_name)}
+                    {raterLabel(rating.profiles?.display_name)}
                     <span className="ml-2 text-xs font-normal text-muted">
                       {rating.visited_on}
                     </span>

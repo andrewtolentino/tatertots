@@ -1,14 +1,15 @@
 /**
- * Ratings are publicly readable, so the map shows whatever is in display_name
- * to anyone with the link. First name only keeps the crew recognisable to each
- * other without publishing full names to strangers.
+ * The label shown against a rating.
  *
- * Note this only shortens what is already stored — it is presentation, not
- * privacy. A display_name of "andrewjtolentino" has no space to split on and
- * comes back unchanged, so the underlying value still needs to be a real name.
+ * Ratings are world-readable, so display_name is public to anyone with the
+ * link — which means anonymity has to live in the stored value, not in how it
+ * is rendered. Trimming a real name down to an initial here would be theatre:
+ * the full string stays one API call away. So the crew stores nicknames and
+ * this renders them verbatim.
+ *
+ * See the handle_new_user trigger, which defaults new accounts to a neutral
+ * placeholder rather than the email prefix for the same reason.
  */
-export function firstName(displayName: string | null | undefined): string {
-  const trimmed = displayName?.trim();
-  if (!trimmed) return "Someone";
-  return trimmed.split(/\s+/)[0];
+export function raterLabel(displayName: string | null | undefined): string {
+  return displayName?.trim() || "Anonymous";
 }
