@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { supabase, isPermissionDenied } from "@/lib/supabase";
 import { prepareImage } from "@/lib/image";
-import { MAX_SCORE, MIN_SCORE, SCORE_STEP, scoreColor } from "@/lib/score";
+import {
+  MAX_SCORE,
+  MID_SCORE,
+  MIN_SCORE,
+  SCORE_STEP,
+  scoreColor,
+} from "@/lib/score";
 import {
   RATING_AXES,
   SERVICE_MODE_LABELS,
@@ -18,8 +24,6 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const MIDPOINT = 3;
-
 export function RateForm({
   item,
   userId,
@@ -31,12 +35,12 @@ export function RateForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
-  const [score, setScore] = useState(MIDPOINT);
+  const [score, setScore] = useState(MID_SCORE);
   const [axes, setAxes] = useState<Record<RatingAxis, number>>({
-    presentation: MIDPOINT,
-    flavor: MIDPOINT,
-    creativity: MIDPOINT,
-    value_rating: MIDPOINT,
+    presentation: MID_SCORE,
+    flavor: MID_SCORE,
+    creativity: MID_SCORE,
+    value_rating: MID_SCORE,
   });
   const [price, setPrice] = useState(2);
   const [texture, setTexture] = useState<TextureTag[]>([]);
@@ -159,7 +163,7 @@ export function RateForm({
               }
               className="flex-1 accent-amber-500"
             />
-            <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted">
+            <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted">
               {axes[key].toFixed(1)}
             </span>
           </div>
