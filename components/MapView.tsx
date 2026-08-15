@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { usePlaces, type PlaceWithItems } from "@/lib/usePlaces";
 import { formatScore, scoreColor } from "@/lib/score";
 import { PlacePanel } from "./PlacePanel";
+import { PlaceList } from "./PlaceList";
 
 // Free, no API key, no signup, no billing account.
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -24,8 +25,33 @@ export function MapView() {
   const markersRef = useRef<Marker[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [selected, setSelected] = useState<PlaceWithItems | null>(null);
+  const [listOpen, setListOpen] = useState(false);
 
   const { places, error, loading } = usePlaces();
+
+  // Shared by the sidebar, the mobile sheet, and the pins themselves, so all
+  // three routes to a place behave identically.
+  const selectPlace = useCallback((place: PlaceWithItems) => {
+    setSelected(place);
+    setListOpen(false);
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    // The detail panel sits on top of the map, so centring on the canvas would
+    // park the pin underneath it. Shift the camera by half the panel so the
+    // selected place lands in the part still visible: sideways for the 24rem
+    // side panel, upward for the bottom sheet on small screens.
+    const sidePanel = window.matchMedia("(min-width: 40rem)").matches;
+    const offset: [number, number] = sidePanel ? [-192, 0] : [0, -110];
+
+    map.easeTo({
+      center: [place.lng, place.lat],
+      zoom: Math.max(map.getZoom(), 14),
+      offset,
+      duration: 600,
+    });
+  }, []);
 
   // MapLibre touches `window` on import, and a static export prerenders this
   // component to HTML at build time, so it can only be imported in the browser.
@@ -102,8 +128,7 @@ export function MapView() {
           place.top_score == null ? "🥔" : formatScore(place.top_score);
         button.addEventListener("click", (event) => {
           event.stopPropagation();
-          setSelected(place);
-          map.easeTo({ center: [place.lng, place.lat], duration: 500 });
+          selectPlace(place);
         });
 
         el.appendChild(button);
@@ -124,48 +149,113 @@ export function MapView() {
     return () => {
       cancelled = true;
     };
-  }, [mapReady, places]);
+  }, [mapReady, places, selectPlace]);
+
+  const count = places?.length ?? 0;
+  const subtitle = loading
+    ? "Loading…"
+    : `${count} spot${count === 1 ? "" : "s"} on the map`;
+
+  const title = (
+    <div>
+      <h1 className="text-base font-semibold">🥔 Tater Tot Tour</h1>
+      <p className="text-xs text-muted">{subtitle}</p>
+    </div>
+  );
 
   return (
     // h-dvh, not flex-1: `body` only has min-height, so its height is
     // indefinite, and a percentage height inside it resolves to auto — which is
     // 0 here because MapLibre positions its canvas absolutely. dvh also tracks
     // mobile browser chrome as it hides.
-    <div className="relative h-dvh w-full">
-      {/* h-full rather than absolute inset-0: maplibre-gl.css sets
-          .maplibregl-map{position:relative} and loads after Tailwind's
-          utilities, so an `absolute` here loses and the map collapses to 0px. */}
-      <div ref={containerRef} className="h-full w-full" />
-
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4">
-        <div className="pointer-events-auto rounded-xl border border-border bg-surface/95 px-4 py-2.5 shadow-sm backdrop-blur">
-          <h1 className="text-base font-semibold">🥔 Tater Tot Tour</h1>
-          <p className="text-xs text-muted">
-            {loading
-              ? "Loading…"
-              : `${places?.length ?? 0} spot${places?.length === 1 ? "" : "s"} on the map`}
-          </p>
+    <div className="flex h-dvh w-full overflow-hidden">
+      {/* Desktop: a real column beside the map rather than an overlay, so no
+          pin can hide underneath it. Below md it collapses and the same list
+          is reachable from the Places button. */}
+      <aside className="hidden w-80 shrink-0 flex-col border-r border-border bg-surface md:flex">
+        <div className="border-b border-border px-4 py-3">{title}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {places && (
+            <PlaceList
+              places={places}
+              selectedId={selected?.id ?? null}
+              onSelect={selectPlace}
+            />
+          )}
         </div>
-      </header>
+      </aside>
 
-      {error && (
-        <div className="pointer-events-auto absolute inset-x-4 top-24 z-10 rounded-lg border border-border bg-surface p-4 text-sm shadow-lg">
-          <p className="font-medium">Could not load places</p>
-          <p className="mt-1 text-muted">{error}</p>
+      <div className="relative h-full min-w-0 flex-1">
+        {/* h-full rather than absolute inset-0: maplibre-gl.css sets
+            .maplibregl-map{position:relative} and loads after Tailwind's
+            utilities, so an `absolute` here loses and the map collapses to 0px. */}
+        <div ref={containerRef} className="h-full w-full" />
+
+        <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-4 md:hidden">
+          <div className="pointer-events-auto rounded-xl border border-border bg-surface/95 px-4 py-2.5 shadow-sm backdrop-blur">
+            {title}
+          </div>
+        </header>
+
+        {error && (
+          <div className="absolute inset-x-4 top-24 z-10 rounded-lg border border-border bg-surface p-4 text-sm shadow-lg md:top-4">
+            <p className="font-medium">Could not load places</p>
+            <p className="mt-1 text-muted">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && count === 0 && (
+          <div className="absolute inset-x-4 top-24 z-10 mx-auto max-w-sm rounded-lg border border-border bg-surface p-4 text-sm shadow-lg md:top-4">
+            <p className="font-medium">No places yet</p>
+            <p className="mt-1 text-muted">
+              Run the seed file in the Supabase SQL editor and refresh.
+            </p>
+          </div>
+        )}
+
+        {count > 0 && (
+          <button
+            onClick={() => setListOpen(true)}
+            className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-medium shadow-lg md:hidden"
+          >
+            Places ({count})
+          </button>
+        )}
+
+        {selected && (
+          <PlacePanel place={selected} onClose={() => setSelected(null)} />
+        )}
+      </div>
+
+      {/* Mobile list, as a sheet over the map. Selecting from it closes the
+          sheet so the pin it flew to is actually visible. */}
+      {listOpen && places && (
+        <div className="fixed inset-0 z-30 md:hidden">
+          <button
+            aria-label="Close list"
+            onClick={() => setListOpen(false)}
+            className="absolute inset-0 bg-black/40"
+          />
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[75svh] flex-col rounded-t-2xl border-t border-border bg-surface">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-sm font-semibold">All places</h2>
+              <button
+                onClick={() => setListOpen(false)}
+                aria-label="Close"
+                className="rounded-md p-1.5 text-muted hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <PlaceList
+                places={places}
+                selectedId={selected?.id ?? null}
+                onSelect={selectPlace}
+              />
+            </div>
+          </div>
         </div>
-      )}
-
-      {!loading && !error && places?.length === 0 && (
-        <div className="pointer-events-auto absolute inset-x-4 top-24 z-10 mx-auto max-w-sm rounded-lg border border-border bg-surface p-4 text-sm shadow-lg">
-          <p className="font-medium">No places yet</p>
-          <p className="mt-1 text-muted">
-            Run the seed file in the Supabase SQL editor and refresh.
-          </p>
-        </div>
-      )}
-
-      {selected && (
-        <PlacePanel place={selected} onClose={() => setSelected(null)} />
       )}
     </div>
   );
