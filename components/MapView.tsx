@@ -8,6 +8,7 @@ import { usePlaces, type PlaceWithItems } from "@/lib/usePlaces";
 import { formatScore, scoreColor } from "@/lib/score";
 import { PlacePanel } from "./PlacePanel";
 import { PlaceList } from "./PlaceList";
+import { SignIn } from "./SignIn";
 
 // Free, no API key, no signup, no billing account.
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -27,7 +28,7 @@ export function MapView() {
   const [selected, setSelected] = useState<PlaceWithItems | null>(null);
   const [listOpen, setListOpen] = useState(false);
 
-  const { places, error, loading } = usePlaces();
+  const { places, error, loading, reload } = usePlaces();
 
   // Shared by the sidebar, the mobile sheet, and the pins themselves, so all
   // three routes to a place behave identically.
@@ -142,7 +143,17 @@ export function MapView() {
       }
 
       if (!bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 70, maxZoom: 14, duration: 0 });
+        // The sidebar card floats over the map rather than displacing it, so
+        // the initial fit has to reserve its width or the westernmost pins
+        // start life hidden underneath it.
+        const wide = window.matchMedia("(min-width: 64rem)").matches;
+        map.fitBounds(bounds, {
+          padding: wide
+            ? { left: 368, top: 64, right: 64, bottom: 64 }
+            : { left: 48, top: 120, right: 48, bottom: 110 },
+          maxZoom: 14,
+          duration: 0,
+        });
       }
     })();
 
@@ -158,8 +169,13 @@ export function MapView() {
 
   const title = (
     <div>
-      <h1 className="text-base font-semibold">🥔 Tater Tot Tour</h1>
-      <p className="text-xs text-muted">{subtitle}</p>
+      <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+        <span aria-hidden className="text-3xl">
+          🥔
+        </span>
+        Tater Tot Tour
+      </h1>
+      <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
     </div>
   );
 
@@ -168,30 +184,32 @@ export function MapView() {
     // indefinite, and a percentage height inside it resolves to auto — which is
     // 0 here because MapLibre positions its canvas absolutely. dvh also tracks
     // mobile browser chrome as it hides.
-    <div className="flex h-dvh w-full overflow-hidden">
-      {/* Desktop: a real column beside the map rather than an overlay, so no
-          pin can hide underneath it. It collapses below lg rather than md
-          because the sidebar and the 24rem detail panel together would leave
-          almost no map on a tablet — the same list is then reachable from the
-          Places button. */}
-      <aside className="hidden w-80 shrink-0 flex-col border-r border-border bg-surface lg:flex">
-        <div className="border-b border-border px-4 py-3">{title}</div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {places && (
-            <PlaceList
-              places={places}
-              selectedId={selected?.id ?? null}
-              onSelect={selectPlace}
-            />
-          )}
-        </div>
-      </aside>
-
-      <div className="relative h-full min-w-0 flex-1">
+    <div className="relative h-dvh w-full overflow-hidden">
+      <div className="relative h-full w-full">
         {/* h-full rather than absolute inset-0: maplibre-gl.css sets
             .maplibregl-map{position:relative} and loads after Tailwind's
             utilities, so an `absolute` here loses and the map collapses to 0px. */}
         <div ref={containerRef} className="h-full w-full" />
+
+        {/* A floating card over a full-bleed map. The map extends underneath
+            it, so fitBounds below pads by the card's width to keep pins from
+            hiding behind it. Collapses under lg, where the card plus the detail
+            panel would leave almost no map — the list moves to the sheet. */}
+        <aside className="absolute top-4 bottom-4 left-4 z-10 hidden w-80 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xl lg:flex">
+          <div className="border-b border-border px-5 py-4">{title}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {places && (
+              <PlaceList
+                places={places}
+                selectedId={selected?.id ?? null}
+                onSelect={selectPlace}
+              />
+            )}
+          </div>
+          <div className="border-t border-border px-4 py-3">
+            <SignIn />
+          </div>
+        </aside>
 
         <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-4 lg:hidden">
           <div className="pointer-events-auto rounded-xl border border-border bg-surface/95 px-4 py-2.5 shadow-sm backdrop-blur">
@@ -225,7 +243,11 @@ export function MapView() {
         )}
 
         {selected && (
-          <PlacePanel place={selected} onClose={() => setSelected(null)} />
+          <PlacePanel
+            place={selected}
+            onClose={() => setSelected(null)}
+            onRated={reload}
+          />
         )}
       </div>
 
@@ -255,6 +277,9 @@ export function MapView() {
                 selectedId={selected?.id ?? null}
                 onSelect={selectPlace}
               />
+            </div>
+            <div className="border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <SignIn />
             </div>
           </div>
         </div>
