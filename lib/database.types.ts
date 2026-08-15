@@ -49,6 +49,13 @@ export type Item = {
   created_at: string;
 };
 
+export type ServiceMode = "dine_in" | "takeout";
+
+export const SERVICE_MODE_LABELS: Record<ServiceMode, string> = {
+  dine_in: "Dine in",
+  takeout: "Takeout",
+};
+
 export type Rating = {
   id: string;
   item_id: string;
@@ -58,6 +65,7 @@ export type Rating = {
   photo_path: string | null;
   visited_on: string;
   detail: Record<string, number> | null;
+  service_mode: ServiceMode | null;
   created_at: string;
 };
 

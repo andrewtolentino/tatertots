@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import type { ServiceMode } from "./database.types";
 
 export type RatingWithWho = {
   id: string;
@@ -12,6 +13,7 @@ export type RatingWithWho = {
   photo_path: string | null;
   visited_on: string;
   detail: Record<string, number> | null;
+  service_mode: ServiceMode | null;
   profiles: { display_name: string } | null;
 };
 

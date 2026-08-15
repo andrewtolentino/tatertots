@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase, isPermissionDenied } from "@/lib/supabase";
 import { prepareImage } from "@/lib/image";
 import { scoreColor } from "@/lib/score";
+import { SERVICE_MODE_LABELS, type ServiceMode } from "@/lib/database.types";
 import type { ItemWithScore } from "@/lib/usePlaces";
 
 const DETAIL_AXES = ["crispiness", "taste", "color"] as const;
@@ -27,6 +28,7 @@ export function RateForm({
   const [notes, setNotes] = useState("");
   const [visitedOn, setVisitedOn] = useState(today());
   const [file, setFile] = useState<File | null>(null);
+  const [serviceMode, setServiceMode] = useState<ServiceMode>("dine_in");
   // The axes are part of every review now, so they start at a midpoint and are
   // always saved. The number beside each slider shows exactly what will be
   // recorded, so an untouched 5 is visible rather than silent.
@@ -69,6 +71,7 @@ export function RateForm({
         photo_path: photoPath,
         visited_on: visitedOn,
         detail,
+        service_mode: serviceMode,
       },
       { onConflict: "item_id,user_id,visited_on" },
     );
@@ -140,6 +143,29 @@ export function RateForm({
         ))}
       </div>
 
+      {/* Takeout tots steam in the box on the way home, so this is context for
+          reading the score rather than an afterthought. */}
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium">Served</span>
+        <div className="flex gap-1 rounded-lg border border-border p-1">
+          {(Object.keys(SERVICE_MODE_LABELS) as ServiceMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={serviceMode === mode}
+              onClick={() => setServiceMode(mode)}
+              className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                serviceMode === mode
+                  ? "bg-foreground text-background"
+                  : "text-muted hover:bg-surface-hover hover:text-foreground"
+              }`}
+            >
+              {SERVICE_MODE_LABELS[mode]}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-1">
         <label htmlFor="notes" className="text-xs font-medium">
           Notes
@@ -165,19 +191,26 @@ export function RateForm({
             value={visitedOn}
             max={today()}
             onChange={(e) => setVisitedOn(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground"
+            className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
           />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <label htmlFor="photo" className="text-xs font-medium">
-            Photo
+          <span className="text-xs font-medium">Photo</span>
+          {/* The native file input renders its own button at its own height, so
+              it never lines up with the date field beside it. Hide it and drive
+              it from a label styled to match. */}
+          <label
+            htmlFor="photo"
+            className="flex h-9 w-full cursor-pointer items-center truncate rounded-lg border border-border bg-background px-3 text-sm text-muted hover:border-foreground"
+          >
+            <span className="truncate">{file ? file.name : "Choose photo"}</span>
           </label>
           <input
             id="photo"
             type="file"
             accept="image/*"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="w-full text-xs text-muted file:mr-2 file:rounded-md file:border file:border-border file:bg-surface file:px-2 file:py-1.5 file:text-xs"
+            className="sr-only"
           />
         </div>
       </div>
