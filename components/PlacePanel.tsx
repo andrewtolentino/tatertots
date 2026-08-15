@@ -134,8 +134,20 @@ export function PlacePanel({
                       {rating.visited_on}
                     </span>
                   </p>
+                  {rating.detail && Object.keys(rating.detail).length > 0 && (
+                    <ul className="mt-1 flex flex-wrap gap-1">
+                      {Object.entries(rating.detail).map(([axis, value]) => (
+                        <li
+                          key={axis}
+                          className="rounded-md bg-surface-hover px-1.5 py-0.5 text-xs text-muted capitalize"
+                        >
+                          {axis} <span className="tabular-nums">{value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {rating.notes && (
-                    <p className="mt-0.5 text-sm text-muted">{rating.notes}</p>
+                    <p className="mt-1 text-sm text-muted">{rating.notes}</p>
                   )}
                   {rating.photo_path && (
                     // eslint-disable-next-line @next/next/no-img-element

@@ -27,8 +27,12 @@ export function RateForm({
   const [notes, setNotes] = useState("");
   const [visitedOn, setVisitedOn] = useState(today());
   const [file, setFile] = useState<File | null>(null);
-  const [showDetail, setShowDetail] = useState(false);
-  const [detail, setDetail] = useState<Record<string, number>>({});
+  // The axes are part of every review now, so they start at a midpoint and are
+  // always saved. The number beside each slider shows exactly what will be
+  // recorded, so an untouched 5 is visible rather than silent.
+  const [detail, setDetail] = useState<Record<string, number>>(
+    Object.fromEntries(DETAIL_AXES.map((axis) => [axis, 5])),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +68,7 @@ export function RateForm({
         notes: notes.trim() || null,
         photo_path: photoPath,
         visited_on: visitedOn,
-        detail: Object.keys(detail).length ? detail : null,
+        detail,
       },
       { onConflict: "item_id,user_id,visited_on" },
     );
@@ -90,7 +94,7 @@ export function RateForm({
       <div>
         <div className="flex items-baseline justify-between">
           <label htmlFor="score" className="text-xs font-medium">
-            Score
+            Overall score
           </label>
           <span
             className="text-2xl font-semibold tabular-nums"
@@ -109,6 +113,31 @@ export function RateForm({
           onChange={(e) => setScore(Number(e.target.value))}
           className="mt-1 w-full accent-amber-500"
         />
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-border pt-3">
+        {DETAIL_AXES.map((axis) => (
+          <div key={axis} className="flex items-center gap-3">
+            <label htmlFor={axis} className="w-20 text-xs capitalize">
+              {axis}
+            </label>
+            <input
+              id={axis}
+              type="range"
+              min={1}
+              max={10}
+              step={1}
+              value={detail[axis]}
+              onChange={(e) =>
+                setDetail((d) => ({ ...d, [axis]: Number(e.target.value) }))
+              }
+              className="flex-1 accent-amber-500"
+            />
+            <span className="w-4 text-right text-xs tabular-nums text-muted">
+              {detail[axis]}
+            </span>
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -152,43 +181,6 @@ export function RateForm({
           />
         </div>
       </div>
-
-      {/* Optional, collapsed: the quick score is the required bit, but the tour
-          has always cared about these axes. */}
-      {showDetail ? (
-        <div className="flex flex-col gap-2">
-          {DETAIL_AXES.map((axis) => (
-            <div key={axis} className="flex items-center gap-3">
-              <label htmlFor={axis} className="w-20 text-xs capitalize">
-                {axis}
-              </label>
-              <input
-                id={axis}
-                type="range"
-                min={1}
-                max={10}
-                step={1}
-                value={detail[axis] ?? 5}
-                onChange={(e) =>
-                  setDetail((d) => ({ ...d, [axis]: Number(e.target.value) }))
-                }
-                className="flex-1 accent-amber-500"
-              />
-              <span className="w-4 text-right text-xs tabular-nums text-muted">
-                {detail[axis] ?? "–"}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setShowDetail(true)}
-          className="self-start text-xs text-muted underline hover:text-foreground"
-        >
-          Add detail
-        </button>
-      )}
 
       {error && <p className="text-xs text-accent">{error}</p>}
 

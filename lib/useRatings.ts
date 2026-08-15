@@ -11,6 +11,7 @@ export type RatingWithWho = {
   notes: string | null;
   photo_path: string | null;
   visited_on: string;
+  detail: Record<string, number> | null;
   profiles: { display_name: string } | null;
 };
 
