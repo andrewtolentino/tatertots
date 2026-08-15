@@ -84,18 +84,29 @@ export function MapView() {
       const bounds = new maplibregl.LngLatBounds();
 
       for (const place of places) {
-        const el = document.createElement("button");
-        el.type = "button";
-        el.setAttribute("aria-label", place.name);
-        el.className =
-          "flex size-9 cursor-pointer items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white shadow-md transition-transform hover:scale-110";
-        el.style.backgroundColor = scoreColor(place.top_score);
-        el.textContent = place.top_score == null ? "🥔" : formatScore(place.top_score);
-        el.addEventListener("click", (event) => {
+        // MapLibre positions this outer element with
+        // `transform: translate(-50%,-50%) translate(xpx,ypx)`. Anything that
+        // adds its own transform — including Tailwind's scale utilities, which
+        // multiply the whole matrix — scales that pixel offset too and throws
+        // the pin away from the cursor. So the outer element stays untouched
+        // and every hover effect lives on the button inside it.
+        const el = document.createElement("div");
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.setAttribute("aria-label", place.name);
+        button.className =
+          "flex size-9 cursor-pointer items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white shadow-md transition-[scale,box-shadow] hover:scale-110 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+        button.style.backgroundColor = scoreColor(place.top_score);
+        button.textContent =
+          place.top_score == null ? "🥔" : formatScore(place.top_score);
+        button.addEventListener("click", (event) => {
           event.stopPropagation();
           setSelected(place);
           map.easeTo({ center: [place.lng, place.lat], duration: 500 });
         });
+
+        el.appendChild(button);
 
         markersRef.current.push(
           new maplibregl.Marker({ element: el })

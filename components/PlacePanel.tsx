@@ -51,12 +51,22 @@ export function PlacePanel({
             <div className="min-w-0">
               <p className="truncate font-medium">{item.name}</p>
               <p className="text-xs text-muted">
-                {POTATO_LABELS[item.potato_type]}
-                {item.rating_count > 0 &&
-                  ` · ${item.rating_count} rating${item.rating_count === 1 ? "" : "s"}`}
-                {item.rating_count > 0 &&
-                  item.rating_count < RANKED_THRESHOLD &&
-                  " · needs another opinion"}
+                {[
+                  // The seed names every item after its own type, so printing
+                  // both just repeats the word back at you.
+                  item.name.trim().toLowerCase() ===
+                  POTATO_LABELS[item.potato_type].toLowerCase()
+                    ? null
+                    : POTATO_LABELS[item.potato_type],
+                  item.rating_count === 0
+                    ? "Not yet rated"
+                    : `${item.rating_count} rating${item.rating_count === 1 ? "" : "s"}`,
+                  item.rating_count > 0 && item.rating_count < RANKED_THRESHOLD
+                    ? "needs another opinion"
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
             <span
