@@ -2,12 +2,13 @@
 export const RANKED_THRESHOLD = 2;
 
 /**
- * Scores run 1-10 in half steps. The paper card used five tots, but five
- * buckets leaves too many places tied once the list passes a handful.
+ * Scores run 1-10 in whole numbers. The paper card used five tots; ten buckets
+ * spread the list out without asking anyone to agonise over half a point at a
+ * bar table.
  */
 export const MIN_SCORE = 1;
 export const MAX_SCORE = 10;
-export const SCORE_STEP = 0.5;
+export const SCORE_STEP = 1;
 
 /** Neutral starting point for a fresh rating, on the 1-10 scale. */
 export const MID_SCORE = 5;
@@ -28,6 +29,11 @@ export function scoreColor(score: number | null | undefined): string {
   return "#78716c";
 }
 
+/**
+ * Ratings are whole numbers, so an "8.0" would be noise — but averages across
+ * the crew genuinely land on halves, and those decimals matter.
+ */
 export function formatScore(score: number | null | undefined): string {
-  return score == null ? "–" : score.toFixed(1);
+  if (score == null) return "–";
+  return Number.isInteger(score) ? String(score) : score.toFixed(1);
 }

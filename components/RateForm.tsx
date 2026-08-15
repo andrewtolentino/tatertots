@@ -8,6 +8,7 @@ import {
   MID_SCORE,
   MIN_SCORE,
   SCORE_STEP,
+  formatScore,
   scoreColor,
 } from "@/lib/score";
 import {
@@ -130,7 +131,7 @@ export function RateForm({
             className="text-2xl font-semibold tabular-nums"
             style={{ color: scoreColor(score) }}
           >
-            {score.toFixed(1)}
+            {formatScore(score)}
           </span>
         </div>
         <input
@@ -164,7 +165,7 @@ export function RateForm({
               className="flex-1 accent-amber-500"
             />
             <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted">
-              {axes[key].toFixed(1)}
+              {formatScore(axes[key])}
             </span>
           </div>
         ))}
