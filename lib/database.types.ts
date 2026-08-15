@@ -27,6 +27,7 @@ export type Place = {
   name: string;
   address: string | null;
   city: string | null;
+  neighborhood: string | null;
   region: Region;
   lat: number;
   lng: number;
