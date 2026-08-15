@@ -170,9 +170,11 @@ export function MapView() {
     // mobile browser chrome as it hides.
     <div className="flex h-dvh w-full overflow-hidden">
       {/* Desktop: a real column beside the map rather than an overlay, so no
-          pin can hide underneath it. Below md it collapses and the same list
-          is reachable from the Places button. */}
-      <aside className="hidden w-80 shrink-0 flex-col border-r border-border bg-surface md:flex">
+          pin can hide underneath it. It collapses below lg rather than md
+          because the sidebar and the 24rem detail panel together would leave
+          almost no map on a tablet — the same list is then reachable from the
+          Places button. */}
+      <aside className="hidden w-80 shrink-0 flex-col border-r border-border bg-surface lg:flex">
         <div className="border-b border-border px-4 py-3">{title}</div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {places && (
@@ -191,21 +193,21 @@ export function MapView() {
             utilities, so an `absolute` here loses and the map collapses to 0px. */}
         <div ref={containerRef} className="h-full w-full" />
 
-        <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-4 md:hidden">
+        <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-4 lg:hidden">
           <div className="pointer-events-auto rounded-xl border border-border bg-surface/95 px-4 py-2.5 shadow-sm backdrop-blur">
             {title}
           </div>
         </header>
 
         {error && (
-          <div className="absolute inset-x-4 top-24 z-10 rounded-lg border border-border bg-surface p-4 text-sm shadow-lg md:top-4">
+          <div className="absolute inset-x-4 top-24 z-10 rounded-lg border border-border bg-surface p-4 text-sm shadow-lg lg:top-4">
             <p className="font-medium">Could not load places</p>
             <p className="mt-1 text-muted">{error}</p>
           </div>
         )}
 
         {!loading && !error && count === 0 && (
-          <div className="absolute inset-x-4 top-24 z-10 mx-auto max-w-sm rounded-lg border border-border bg-surface p-4 text-sm shadow-lg md:top-4">
+          <div className="absolute inset-x-4 top-24 z-10 mx-auto max-w-sm rounded-lg border border-border bg-surface p-4 text-sm shadow-lg lg:top-4">
             <p className="font-medium">No places yet</p>
             <p className="mt-1 text-muted">
               Run the seed file in the Supabase SQL editor and refresh.
@@ -216,7 +218,7 @@ export function MapView() {
         {count > 0 && (
           <button
             onClick={() => setListOpen(true)}
-            className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-medium shadow-lg md:hidden"
+            className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-medium shadow-lg lg:hidden"
           >
             Places ({count})
           </button>
@@ -230,7 +232,7 @@ export function MapView() {
       {/* Mobile list, as a sheet over the map. Selecting from it closes the
           sheet so the pin it flew to is actually visible. */}
       {listOpen && places && (
-        <div className="fixed inset-0 z-30 md:hidden">
+        <div className="fixed inset-0 z-30 lg:hidden">
           <button
             aria-label="Close list"
             onClick={() => setListOpen(false)}
