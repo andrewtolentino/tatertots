@@ -5,12 +5,6 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import type { Profile } from "./database.types";
 
-/** Where the magic link should land. Honours basePath on github.io. */
-export function authRedirectTo(): string {
-  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-  return `${window.location.origin}${base}/`;
-}
-
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);

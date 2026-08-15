@@ -2,32 +2,49 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { authRedirectTo, useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/lib/useAuth";
 
+/*
+ * Password sign-in rather than magic links. Supabase's built-in mailer allows
+ * only a couple of emails per hour per project, shared across the whole crew,
+ * and every attempt spends one — which made email links unusable for a group
+ * of three who all sign in around the same time. Accounts are created by hand
+ * in the Supabase dashboard; there is deliberately no self-signup, since crew
+ * membership is a fixed list.
+ */
 export function SignIn() {
   const { user, profile, isCrew, loading, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
-  const [message, setMessage] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function sendLink(event: React.FormEvent) {
+  async function signIn(event: React.FormEvent) {
     event.preventDefault();
-    setStatus("sending");
+    setBusy(true);
+    setError(null);
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
-      options: { emailRedirectTo: authRedirectTo() },
+      password,
     });
 
-    if (error) {
-      setStatus("error");
-      setMessage(error.message);
+    setBusy(false);
+
+    if (signInError) {
+      // "Email not confirmed" means the dashboard account was created without
+      // Auto Confirm ticked, which is a different fix from a wrong password.
+      setError(
+        /not confirmed/i.test(signInError.message)
+          ? "That account still needs confirming — re-create it in Supabase with “Auto Confirm User” ticked."
+          : signInError.message,
+      );
       return;
     }
-    setStatus("sent");
+
+    setOpen(false);
+    setPassword("");
   }
 
   if (loading) return null;
@@ -60,43 +77,47 @@ export function SignIn() {
     );
   }
 
-  if (status === "sent") {
-    return (
-      <p className="rounded-lg border border-border px-3 py-2 text-xs text-muted">
-        Check <span className="text-foreground">{email}</span> for a sign-in
-        link.
-      </p>
-    );
-  }
-
   return (
-    <form onSubmit={sendLink} className="flex flex-col gap-2">
+    <form onSubmit={signIn} className="flex flex-col gap-2">
       <input
         type="email"
         required
         autoFocus
+        autoComplete="username"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@example.com"
-        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-foreground"
+        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-foreground"
+      />
+      <input
+        type="password"
+        required
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Password"
+        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-foreground"
       />
       <div className="flex gap-2">
         <button
           type="submit"
-          disabled={status === "sending"}
-          className="flex-1 rounded-lg bg-foreground px-3 py-2 text-xs font-medium text-background disabled:opacity-50"
+          disabled={busy}
+          className="h-9 flex-1 rounded-lg bg-foreground px-3 text-xs font-medium text-background disabled:opacity-50"
         >
-          {status === "sending" ? "Sending…" : "Email me a link"}
+          {busy ? "Signing in…" : "Sign in"}
         </button>
         <button
           type="button"
-          onClick={() => setOpen(false)}
-          className="rounded-lg px-3 py-2 text-xs text-muted hover:text-foreground"
+          onClick={() => {
+            setOpen(false);
+            setError(null);
+          }}
+          className="h-9 rounded-lg px-3 text-xs text-muted hover:text-foreground"
         >
           Cancel
         </button>
       </div>
-      {status === "error" && <p className="text-xs text-accent">{message}</p>}
+      {error && <p className="text-xs text-accent">{error}</p>}
     </form>
   );
 }
