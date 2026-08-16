@@ -11,6 +11,7 @@ import { PlaceList } from "./PlaceList";
 import { SignIn } from "./SignIn";
 import { SuggestForm } from "./SuggestForm";
 import { SuggestionsQueue } from "./SuggestionsQueue";
+import { PotatoBurst } from "./PotatoBurst";
 import { useAuth } from "@/lib/useAuth";
 
 // Free, no API key, no signup, no billing account.
@@ -170,14 +171,12 @@ export function MapView() {
   const count = places?.length ?? 0;
   const subtitle = loading
     ? "Loading…"
-    : `${count} spot${count === 1 ? "" : "s"} on the map`;
+    : `${count} spot${count === 1 ? "" : "s"} on the map and more taters to rate`;
 
   const title = (
     <div>
       <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-        <span aria-hidden className="text-3xl">
-          🥔
-        </span>
+        <PotatoBurst />
         Tater Tot Tour
       </h1>
       <p className="mt-0.5 text-xs text-muted">{subtitle}</p>

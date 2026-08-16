@@ -33,3 +33,53 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
+
+/*
+ * Potato fireworks. Split across two elements so each axis can ease
+ * independently: horizontal drift is linear, vertical rises, hangs, then falls.
+ */
+.potato-burst-x {
+  position: absolute;
+  display: block;
+  animation: potato-x 1400ms cubic-bezier(0.12, 0.7, 0.35, 1) var(--delay, 0ms)
+    both;
+}
+
+.potato-burst-y {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1;
+  animation: potato-y 1400ms cubic-bezier(0.3, 0, 0.6, 1) var(--delay, 0ms) both;
+}
+
+@keyframes potato-x {
+  to {
+    transform: translateX(var(--dx));
+  }
+}
+
+@keyframes potato-y {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(var(--scale));
+    opacity: 1;
+  }
+  30% {
+    transform: translateY(var(--peak)) rotate(calc(var(--rot) * 0.3))
+      scale(var(--scale));
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(var(--fall)) rotate(var(--rot)) scale(var(--scale));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .potato-burst-x,
+  .potato-burst-y {
+    animation: none;
+  }
+}

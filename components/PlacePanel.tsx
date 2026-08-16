@@ -103,9 +103,9 @@ export function PlacePanel({
           {isCrew && user && ratingItemId !== soleGenericItem.id && (
             <button
               onClick={() => setRatingItemId(soleGenericItem.id)}
-              className="mt-3 rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
+              className="mt-3 rounded-md border border-border px-2.5 py-1 text-left text-xs font-medium hover:bg-surface-hover"
             >
-              Rate these
+              Rate {place.name}
             </button>
           )}
 
@@ -152,9 +152,9 @@ export function PlacePanel({
               {isCrew && user && ratingItemId !== item.id && (
                 <button
                   onClick={() => setRatingItemId(item.id)}
-                  className="mt-2 rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
+                  className="mt-2 rounded-md border border-border px-2.5 py-1 text-left text-xs font-medium hover:bg-surface-hover"
                 >
-                  Rate these
+                  Rate {item.name}
                 </button>
               )}
 
