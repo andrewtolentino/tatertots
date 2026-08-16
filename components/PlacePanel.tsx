@@ -14,13 +14,16 @@ import { raterLabel } from "@/lib/name";
 import { RateForm } from "./RateForm";
 import { ReportNoTots } from "./ReportNoTots";
 
-/** "Not yet rated" / "2 ratings" / "1 rating · needs another opinion". */
+/**
+ * Labels the score beside it. A crew of three means the count tops out at three,
+ * so printing it is noise — but a single rating is worth flagging, because an
+ * "average" resting on one person is not the crew's verdict.
+ */
 function ratingSummary(item: { rating_count: number }): string {
   if (item.rating_count === 0) return "Not yet rated";
-  const base = `${item.rating_count} rating${item.rating_count === 1 ? "" : "s"}`;
   return item.rating_count < RANKED_THRESHOLD
-    ? `${base} · needs another opinion`
-    : base;
+    ? "Average rating · needs another opinion"
+    : "Average rating";
 }
 
 export function PlacePanel({
