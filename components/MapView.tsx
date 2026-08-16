@@ -269,6 +269,11 @@ export function MapView() {
 
         {selected && (
           <PlacePanel
+            /* Selecting another place swaps this component's props without
+               remounting it, so any state inside survived the switch — a
+               submitted "no tots" report kept showing its thank-you on every
+               other place. Keying by id makes each place a fresh panel. */
+            key={selected.id}
             place={selected}
             onClose={() => setSelected(null)}
             onRated={reload}
