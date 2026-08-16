@@ -178,8 +178,8 @@ export function MapView() {
       <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
       <p className="mt-2 max-w-xs text-xs leading-relaxed text-muted">
         An interactive tour of tater tots around the Bay Area. We&rsquo;re just
-        getting started, so your favourite might not be here yet. Every rating
-        is our own — and strictly about the tots.
+        getting started, so your favorite might not be here yet. Every rating is
+        our own and strictly about the tots.
       </p>
     </div>
   );
