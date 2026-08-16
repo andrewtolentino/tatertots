@@ -12,6 +12,7 @@ import { SignIn } from "./SignIn";
 import { SuggestForm } from "./SuggestForm";
 import { SuggestionsQueue } from "./SuggestionsQueue";
 import { PotatoBurst } from "./PotatoBurst";
+import { Credit } from "./Credit";
 import { useAuth } from "@/lib/useAuth";
 
 // Free, no API key, no signup, no billing account.
@@ -24,7 +25,7 @@ const SF = { lng: -122.4194, lat: 37.7749 };
 // after bundling.
 const WORKER_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/maplibre/maplibre-gl-worker.mjs`;
 
-export function MapView() {
+export function MapView({ year }: { year: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
@@ -233,12 +234,16 @@ export function MapView() {
               )}
             </div>
             <SignIn />
+            <Credit year={year} />
           </div>
         </aside>
 
         <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start gap-3 p-4 lg:hidden">
           <div className="pointer-events-auto rounded-xl border border-border bg-surface/95 px-4 py-2.5 shadow-sm backdrop-blur">
             {title}
+            <div className="mt-2 border-t border-border pt-2">
+              <Credit year={year} />
+            </div>
           </div>
         </header>
 

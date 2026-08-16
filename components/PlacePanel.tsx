@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 import type { PlaceWithItems } from "@/lib/usePlaces";
 import {
   POTATO_LABELS,
@@ -38,6 +39,19 @@ export function PlacePanel({
   const { user, isCrew } = useAuth();
   const { ratings, reload } = useRatings(place.id);
   const [ratingItemId, setRatingItemId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Two-step delete rather than a window.confirm: same protection against a
+  // stray click, without a modal dialog interrupting the page.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  async function deleteRating(id: string) {
+    // RLS restricts deletes to the row's own author, so a crafted request from
+    // anyone else fails at the database regardless of what the UI shows.
+    await supabase.from("ratings").delete().eq("id", id);
+    setConfirmDeleteId(null);
+    reload();
+    onRated();
+  }
 
   const mapsQuery = encodeURIComponent(
     [place.name, place.address, place.city].filter(Boolean).join(", "),
@@ -253,6 +267,63 @@ export function PlacePanel({
                       alt={`Tots at ${place.name}`}
                       loading="lazy"
                       className="mt-2 w-full rounded-lg border border-border"
+                    />
+                  )}
+
+                  {user?.id === rating.user_id && editingId !== rating.id && (
+                    <div className="mt-2 flex items-center gap-2">
+                      {confirmDeleteId === rating.id ? (
+                        <>
+                          <span className="text-xs text-muted">Delete this?</span>
+                          <button
+                            onClick={() => deleteRating(rating.id)}
+                            className="rounded-md border border-border px-2 py-0.5 text-xs font-medium hover:bg-surface-hover"
+                          >
+                            Yes, delete
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-xs text-muted hover:text-foreground"
+                          >
+                            Keep
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingId(rating.id);
+                              setRatingItemId(null);
+                            }}
+                            className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(rating.id)}
+                            className="text-xs text-muted underline underline-offset-2 hover:text-foreground"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {user && editingId === rating.id && (
+                    <RateForm
+                      item={
+                        place.items.find((i) => i.id === rating.item_id) ??
+                        place.items[0]
+                      }
+                      userId={user.id}
+                      existing={rating}
+                      onCancel={() => setEditingId(null)}
+                      onSaved={() => {
+                        setEditingId(null);
+                        reload();
+                        onRated();
+                      }}
                     />
                   )}
                 </div>

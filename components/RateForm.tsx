@@ -20,6 +20,7 @@ import {
   type TextureTag,
 } from "@/lib/database.types";
 import type { ItemWithScore } from "@/lib/usePlaces";
+import type { RatingWithWho } from "@/lib/useRatings";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -28,27 +29,37 @@ function today(): string {
 export function RateForm({
   item,
   userId,
+  existing,
   onSaved,
   onCancel,
 }: {
   item: ItemWithScore;
   userId: string;
+  /** Present when correcting a rating already saved, rather than adding one. */
+  existing?: RatingWithWho | null;
   onSaved: () => void;
   onCancel: () => void;
 }) {
-  const [score, setScore] = useState(MID_SCORE);
+  // Editing starts from what was actually saved. A blank form would mean
+  // retyping the whole rating from memory, and anything forgotten would be
+  // overwritten with nothing.
+  const [score, setScore] = useState(existing?.score ?? MID_SCORE);
   const [axes, setAxes] = useState<Record<RatingAxis, number>>({
-    presentation: MID_SCORE,
-    flavor: MID_SCORE,
-    creativity: MID_SCORE,
-    value_rating: MID_SCORE,
+    presentation: existing?.presentation ?? MID_SCORE,
+    flavor: existing?.flavor ?? MID_SCORE,
+    creativity: existing?.creativity ?? MID_SCORE,
+    value_rating: existing?.value_rating ?? MID_SCORE,
   });
-  const [price, setPrice] = useState(2);
-  const [texture, setTexture] = useState<TextureTag[]>([]);
-  const [orderText, setOrderText] = useState("");
-  const [notes, setNotes] = useState("");
-  const [visitedOn, setVisitedOn] = useState(today());
-  const [serviceMode, setServiceMode] = useState<ServiceMode>("dine_in");
+  const [price, setPrice] = useState(existing?.price ?? 2);
+  const [texture, setTexture] = useState<TextureTag[]>(existing?.texture ?? []);
+  const [orderText, setOrderText] = useState(existing?.order_text ?? "");
+  const [notes, setNotes] = useState(existing?.notes ?? "");
+  // Crucially the original visit date, not today: saving keys on it, so
+  // defaulting to today would file a correction as a second, separate visit.
+  const [visitedOn, setVisitedOn] = useState(existing?.visited_on ?? today());
+  const [serviceMode, setServiceMode] = useState<ServiceMode>(
+    existing?.service_mode ?? "dine_in",
+  );
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +77,8 @@ export function RateForm({
     setSaving(true);
     setError(null);
 
-    let photoPath: string | null = null;
+    // Keep the photo already attached unless a new one is chosen.
+    let photoPath: string | null = existing?.photo_path ?? null;
 
     if (file) {
       const prepared = await prepareImage(file);
@@ -83,26 +95,30 @@ export function RateForm({
       photoPath = path;
     }
 
-    // Upsert rather than insert: the unique key is (item, person, visit date),
-    // so re-rating the same visit corrects it instead of erroring.
-    const { error: saveError } = await supabase.from("ratings").upsert(
-      {
-        item_id: item.id,
-        user_id: userId,
-        score,
-        ...axes,
-        price,
-        // An empty array is a real answer ("no texture stood out"); null would
-        // mean the question was never asked.
-        texture,
-        order_text: orderText.trim() || null,
-        notes: notes.trim() || null,
-        photo_path: photoPath,
-        visited_on: visitedOn,
-        service_mode: serviceMode,
-      },
-      { onConflict: "item_id,user_id,visited_on" },
-    );
+    const payload = {
+      item_id: item.id,
+      user_id: userId,
+      score,
+      ...axes,
+      price,
+      // An empty array is a real answer ("no texture stood out"); null would
+      // mean the question was never asked.
+      texture,
+      order_text: orderText.trim() || null,
+      notes: notes.trim() || null,
+      photo_path: photoPath,
+      visited_on: visitedOn,
+      service_mode: serviceMode,
+    };
+
+    // Editing targets the row by id so it stays one rating even if the visit
+    // date is corrected. A new rating upserts on (item, person, visit date), so
+    // re-rating the same visit fixes it rather than erroring.
+    const { error: saveError } = existing
+      ? await supabase.from("ratings").update(payload).eq("id", existing.id)
+      : await supabase
+          .from("ratings")
+          .upsert(payload, { onConflict: "item_id,user_id,visited_on" });
 
     setSaving(false);
 
@@ -110,7 +126,9 @@ export function RateForm({
       setError(
         isPermissionDenied(saveError)
           ? "Your account is not on the crew list, so it cannot post ratings."
-          : saveError.message,
+          : saveError.code === "23505"
+            ? "You already have a rating for this place on that date."
+            : saveError.message,
       );
       return;
     }
@@ -293,7 +311,13 @@ export function RateForm({
             htmlFor="photo"
             className="flex h-9 w-full cursor-pointer items-center truncate rounded-lg border border-border bg-background px-3 text-sm text-muted hover:border-foreground"
           >
-            <span className="truncate">{file ? file.name : "Choose photo"}</span>
+            <span className="truncate">
+              {file
+                ? file.name
+                : existing?.photo_path
+                  ? "Replace photo"
+                  : "Choose photo"}
+            </span>
           </label>
           <input
             id="photo"
@@ -313,7 +337,7 @@ export function RateForm({
           disabled={saving}
           className="h-9 flex-1 rounded-lg bg-foreground px-3 text-sm font-medium text-background disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save rating"}
+          {saving ? "Saving…" : existing ? "Save changes" : "Save rating"}
         </button>
         <button
           type="button"
