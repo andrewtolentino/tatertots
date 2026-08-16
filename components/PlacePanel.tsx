@@ -259,7 +259,9 @@ export function PlacePanel({
         </section>
       )}
 
-      <div className="mt-5 flex flex-col gap-2 text-sm">
+      {/* Separates the crew's verdict from the practical details — where it is,
+          how to get there — which are a different kind of information. */}
+      <div className="mt-5 flex flex-col gap-2 border-t border-border pt-5 text-sm">
         {place.address && <p className="text-muted">{place.address}</p>}
         <a
           className="text-accent hover:underline"
