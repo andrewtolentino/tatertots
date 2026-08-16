@@ -9,7 +9,7 @@ export type Region =
   | "south_bay"
   | "north_bay";
 
-export type PlaceStatus = "wishlist" | "visited" | "closed";
+export type PlaceStatus = "wishlist" | "visited" | "closed" | "no_tots";
 
 export type PotatoType =
   | "tater_tot"

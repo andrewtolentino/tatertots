@@ -206,9 +206,20 @@ export function SuggestionsQueue({
   const { suggestions, reload } = useSuggestions(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
-  async function resolve(id: string) {
-    await supabase.from("suggestions").update({ status: "approved" }).eq("id", id);
+  /** Report confirmed: retire the place, keeping its row and any ratings. */
+  async function removeFromMap(suggestion: Suggestion) {
+    if (suggestion.place_id) {
+      await supabase
+        .from("places")
+        .update({ status: "no_tots" })
+        .eq("id", suggestion.place_id);
+    }
+    await supabase
+      .from("suggestions")
+      .update({ status: "approved" })
+      .eq("id", suggestion.id);
     reload();
+    onApproved();
   }
 
   async function reject(id: string) {
@@ -258,6 +269,21 @@ export function SuggestionsQueue({
             {suggestion.note && (
               <p className="mt-2 text-sm text-muted">{suggestion.note}</p>
             )}
+
+            {suggestion.kind === "no_tots" && (
+              <a
+                href={`https://www.google.com/search?q=${encodeURIComponent(
+                  [suggestion.name, suggestion.city, "menu tater tots"]
+                    .filter(Boolean)
+                    .join(" "),
+                )}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-2 inline-block text-xs text-accent hover:underline"
+              >
+                Check their menu →
+              </a>
+            )}
             {suggestion.submitter_name && (
               <p className="mt-1 text-xs text-muted">
                 — {suggestion.submitter_name}
@@ -278,10 +304,10 @@ export function SuggestionsQueue({
               <div className="mt-3 flex gap-2">
                 {suggestion.kind === "no_tots" ? (
                   <button
-                    onClick={() => resolve(suggestion.id)}
+                    onClick={() => removeFromMap(suggestion)}
                     className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
                   >
-                    Checked it
+                    Take off the map
                   </button>
                 ) : (
                   <button
@@ -295,7 +321,7 @@ export function SuggestionsQueue({
                   onClick={() => reject(suggestion.id)}
                   className="rounded-md px-2.5 py-1 text-xs text-muted hover:text-foreground"
                 >
-                  Dismiss
+                  {suggestion.kind === "no_tots" ? "Still has tots" : "Dismiss"}
                 </button>
               </div>
             )}

@@ -24,7 +24,13 @@ export function usePlaces() {
     // in the places query. Two round trips and a client-side join is simpler
     // than adding a synthetic relationship, and the dataset is tiny.
     const [placesResult, scoresResult] = await Promise.all([
-      supabase.from("places").select("*, items(*)").order("name"),
+      // Places taken off the map keep their row — and their ratings — but stop
+      // appearing. See migration 0008.
+      supabase
+        .from("places")
+        .select("*, items(*)")
+        .not("status", "in", "(closed,no_tots)")
+        .order("name"),
       supabase.from("item_scores").select("*"),
     ]);
 
