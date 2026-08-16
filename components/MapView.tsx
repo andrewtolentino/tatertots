@@ -11,7 +11,7 @@ import { PlaceList } from "./PlaceList";
 import { SignIn } from "./SignIn";
 import { SuggestForm } from "./SuggestForm";
 import { SuggestionsQueue } from "./SuggestionsQueue";
-import { PotatoBurst } from "./PotatoBurst";
+import { PotatoRain } from "./PotatoRain";
 import { Credit } from "./Credit";
 import { useAuth } from "@/lib/useAuth";
 
@@ -177,7 +177,7 @@ export function MapView({ year }: { year: number }) {
   const title = (
     <div>
       <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-        <PotatoBurst />
+        <PotatoRain />
         Tater Tot Tour
       </h1>
       <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
