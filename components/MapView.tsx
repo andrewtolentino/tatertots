@@ -190,11 +190,11 @@ export function MapView({ year }: { year: number }) {
   );
 
   return (
-    // h-dvh, not flex-1: `body` only has min-height, so its height is
-    // indefinite, and a percentage height inside it resolves to auto — which is
-    // 0 here because MapLibre positions its canvas absolutely. dvh also tracks
-    // mobile browser chrome as it hides.
-    <div className="relative h-dvh w-full overflow-hidden">
+    // Pinned to the viewport rather than sized in dvh or percentages. Both of
+    // those have to agree with the html/body height to avoid a scrollable
+    // document on mobile; `fixed inset-0` simply is the viewport, so there is
+    // nothing to disagree with.
+    <div className="fixed inset-0 overflow-hidden">
       <div className="relative h-full w-full">
         {/* h-full rather than absolute inset-0: maplibre-gl.css sets
             .maplibregl-map{position:relative} and loads after Tailwind's
