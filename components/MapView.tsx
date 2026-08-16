@@ -9,6 +9,9 @@ import { formatScore, scoreColor } from "@/lib/score";
 import { PlacePanel } from "./PlacePanel";
 import { PlaceList } from "./PlaceList";
 import { SignIn } from "./SignIn";
+import { SuggestForm } from "./SuggestForm";
+import { SuggestionsQueue } from "./SuggestionsQueue";
+import { useAuth } from "@/lib/useAuth";
 
 // Free, no API key, no signup, no billing account.
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -27,8 +30,10 @@ export function MapView() {
   const [mapReady, setMapReady] = useState(false);
   const [selected, setSelected] = useState<PlaceWithItems | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const [overlay, setOverlay] = useState<null | "suggest" | "queue">(null);
 
   const { places, error, loading, reload } = usePlaces();
+  const { isCrew } = useAuth();
 
   // Shared by the sidebar, the mobile sheet, and the pins themselves, so all
   // three routes to a place behave identically.
@@ -211,7 +216,23 @@ export function MapView() {
               />
             )}
           </div>
-          <div className="border-t border-border px-4 py-3">
+          <div className="flex flex-col gap-2 border-t border-border px-4 py-3">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setOverlay("suggest")}
+                className="flex-1 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-surface-hover"
+              >
+                Suggest a spot
+              </button>
+              {isCrew && (
+                <button
+                  onClick={() => setOverlay("queue")}
+                  className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-surface-hover"
+                >
+                  Review
+                </button>
+              )}
+            </div>
             <SignIn />
           </div>
         </aside>
@@ -283,9 +304,50 @@ export function MapView() {
                 onSelect={selectPlace}
               />
             </div>
-            <div className="border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="flex flex-col gap-2 border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setListOpen(false);
+                    setOverlay("suggest");
+                  }}
+                  className="flex-1 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-surface-hover"
+                >
+                  Suggest a spot
+                </button>
+                {isCrew && (
+                  <button
+                    onClick={() => {
+                      setListOpen(false);
+                      setOverlay("queue");
+                    }}
+                    className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-surface-hover"
+                  >
+                    Review
+                  </button>
+                )}
+              </div>
               <SignIn />
             </div>
+          </div>
+        </div>
+      )}
+      {overlay && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
+          <button
+            aria-label="Close"
+            onClick={() => setOverlay(null)}
+            className="absolute inset-0 bg-black/40"
+          />
+          <div className="relative max-h-[85svh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 shadow-xl sm:max-w-md sm:rounded-2xl">
+            {overlay === "suggest" ? (
+              <SuggestForm onClose={() => setOverlay(null)} />
+            ) : (
+              <SuggestionsQueue
+                onClose={() => setOverlay(null)}
+                onApproved={reload}
+              />
+            )}
           </div>
         </div>
       )}
