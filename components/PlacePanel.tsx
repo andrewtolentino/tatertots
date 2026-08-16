@@ -14,6 +14,15 @@ import { raterLabel } from "@/lib/name";
 import { RateForm } from "./RateForm";
 import { ReportNoTots } from "./ReportNoTots";
 
+/** "Not yet rated" / "2 ratings" / "1 rating · needs another opinion". */
+function ratingSummary(item: { rating_count: number }): string {
+  if (item.rating_count === 0) return "Not yet rated";
+  const base = `${item.rating_count} rating${item.rating_count === 1 ? "" : "s"}`;
+  return item.rating_count < RANKED_THRESHOLD
+    ? `${base} · needs another opinion`
+    : base;
+}
+
 export function PlacePanel({
   place,
   onClose,
@@ -30,6 +39,18 @@ export function PlacePanel({
   const mapsQuery = encodeURIComponent(
     [place.name, place.address, place.city].filter(Boolean).join(", "),
   );
+
+  // The default seeded item: one entry, plain tots, named after its own type.
+  // Anything else — a second item, or one renamed to what the menu calls it —
+  // is real information and gets the full list treatment.
+  const onlyItem = place.items.length === 1 ? place.items[0] : null;
+  const soleGenericItem =
+    onlyItem &&
+    onlyItem.potato_type === "tater_tot" &&
+    onlyItem.name.trim().toLowerCase() ===
+      POTATO_LABELS.tater_tot.toLowerCase()
+      ? onlyItem
+      : null;
 
   return (
     <aside
@@ -52,72 +73,107 @@ export function PlacePanel({
         </button>
       </div>
 
-      {place.status === "wishlist" && (
+      {place.status === "closed" && (
         <p className="mt-4 rounded-lg border border-border px-3 py-2 text-xs text-muted">
-          On the wishlist — nobody has rated this yet.
+          Reported closed.
         </p>
       )}
 
-      <ul className="mt-5 flex flex-col gap-3">
-        {place.items.map((item) => (
-          <li key={item.id} className="rounded-lg border border-border p-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{item.name}</p>
-                <p className="text-xs text-muted">
-                  {[
-                    // The seed names every item after its own type, so printing
-                    // both just repeats the word back at you.
-                    item.name.trim().toLowerCase() ===
-                    POTATO_LABELS[item.potato_type].toLowerCase()
-                      ? null
-                      : POTATO_LABELS[item.potato_type],
-                    item.rating_count === 0
-                      ? "Not yet rated"
-                      : `${item.rating_count} rating${item.rating_count === 1 ? "" : "s"}`,
-                    item.rating_count > 0 && item.rating_count < RANKED_THRESHOLD
-                      ? "needs another opinion"
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
+      {/* Everything on the map is tater tots today, so a card labelled "Tater
+          Tots" inside a tater tot site says the obvious twice. When a place has
+          exactly one item and it is the unnamed default, the score stands on its
+          own. The moment a place gets a second item, or one is renamed to what
+          the menu actually calls it, the full list comes back — which is how
+          this survives the eventual move beyond tots. */}
+      {soleGenericItem ? (
+        <div className="mt-5">
+          <div className="flex items-end justify-between gap-4">
+            <p className="text-sm text-muted">{ratingSummary(soleGenericItem)}</p>
+            <span
+              className="shrink-0 text-4xl font-semibold tabular-nums"
+              style={{ color: scoreColor(soleGenericItem.avg_score) }}
+            >
+              {formatScore(soleGenericItem.avg_score)}
+            </span>
+          </div>
+
+          {isCrew && user && ratingItemId !== soleGenericItem.id && (
+            <button
+              onClick={() => setRatingItemId(soleGenericItem.id)}
+              className="mt-3 rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
+            >
+              Rate these
+            </button>
+          )}
+
+          {isCrew && user && ratingItemId === soleGenericItem.id && (
+            <RateForm
+              item={soleGenericItem}
+              userId={user.id}
+              onCancel={() => setRatingItemId(null)}
+              onSaved={() => {
+                setRatingItemId(null);
+                reload();
+                onRated();
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <ul className="mt-5 flex flex-col gap-3">
+          {place.items.map((item) => (
+            <li key={item.id} className="rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{item.name}</p>
+                  <p className="text-xs text-muted">
+                    {[
+                      item.name.trim().toLowerCase() ===
+                      POTATO_LABELS[item.potato_type].toLowerCase()
+                        ? null
+                        : POTATO_LABELS[item.potato_type],
+                      ratingSummary(item),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <span
+                  className="shrink-0 text-2xl font-semibold tabular-nums"
+                  style={{ color: scoreColor(item.avg_score) }}
+                >
+                  {formatScore(item.avg_score)}
+                </span>
               </div>
-              <span
-                className="shrink-0 text-2xl font-semibold tabular-nums"
-                style={{ color: scoreColor(item.avg_score) }}
-              >
-                {formatScore(item.avg_score)}
-              </span>
-            </div>
 
-            {isCrew && user && ratingItemId !== item.id && (
-              <button
-                onClick={() => setRatingItemId(item.id)}
-                className="mt-2 rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
-              >
-                Rate these
-              </button>
-            )}
+              {isCrew && user && ratingItemId !== item.id && (
+                <button
+                  onClick={() => setRatingItemId(item.id)}
+                  className="mt-2 rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
+                >
+                  Rate these
+                </button>
+              )}
 
-            {isCrew && user && ratingItemId === item.id && (
-              <RateForm
-                item={item}
-                userId={user.id}
-                onCancel={() => setRatingItemId(null)}
-                onSaved={() => {
-                  setRatingItemId(null);
-                  reload();
-                  onRated();
-                }}
-              />
-            )}
-          </li>
-        ))}
-        {place.items.length === 0 && (
-          <li className="text-sm text-muted">No items listed yet.</li>
-        )}
-      </ul>
+              {isCrew && user && ratingItemId === item.id && (
+                <RateForm
+                  item={item}
+                  userId={user.id}
+                  onCancel={() => setRatingItemId(null)}
+                  onSaved={() => {
+                    setRatingItemId(null);
+                    reload();
+                    onRated();
+                  }}
+                />
+              )}
+            </li>
+          ))}
+          {place.items.length === 0 && (
+            <li className="text-sm text-muted">No items listed yet.</li>
+          )}
+        </ul>
+      )}
 
       {ratings && ratings.length > 0 && (
         <section className="mt-5">
