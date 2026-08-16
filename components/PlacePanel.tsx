@@ -12,6 +12,7 @@ import { publicPhotoUrl, useRatings } from "@/lib/useRatings";
 import { useAuth } from "@/lib/useAuth";
 import { raterLabel } from "@/lib/name";
 import { RateForm } from "./RateForm";
+import { ReportNoTots } from "./ReportNoTots";
 
 export function PlacePanel({
   place,
@@ -223,6 +224,8 @@ export function PlacePanel({
           </a>
         )}
       </div>
+
+      <ReportNoTots place={place} />
     </aside>
   );
 }

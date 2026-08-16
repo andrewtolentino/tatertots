@@ -119,6 +119,8 @@ export type Profile = {
   created_at: string;
 };
 
+export type SuggestionKind = "new_place" | "no_tots";
+
 export type Suggestion = {
   id: string;
   name: string;
@@ -129,6 +131,8 @@ export type Suggestion = {
   submitter_contact: string | null;
   note: string | null;
   status: "pending" | "approved" | "rejected";
+  kind: SuggestionKind;
+  place_id: string | null;
   created_at: string;
 };
 

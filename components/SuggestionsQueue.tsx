@@ -206,6 +206,11 @@ export function SuggestionsQueue({
   const { suggestions, reload } = useSuggestions(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
+  async function resolve(id: string) {
+    await supabase.from("suggestions").update({ status: "approved" }).eq("id", id);
+    reload();
+  }
+
   async function reject(id: string) {
     await supabase.from("suggestions").update({ status: "rejected" }).eq("id", id);
     reload();
@@ -240,6 +245,11 @@ export function SuggestionsQueue({
       <ul className="flex flex-col gap-3">
         {(suggestions ?? []).map((suggestion) => (
           <li key={suggestion.id} className="rounded-lg border border-border p-3">
+            {suggestion.kind === "no_tots" && (
+              <p className="mb-1 inline-block rounded-md bg-surface-hover px-1.5 py-0.5 text-xs font-medium text-muted">
+                Reported: no tots
+              </p>
+            )}
             <p className="font-medium">{suggestion.name}</p>
             <p className="text-xs text-muted">
               {[suggestion.address, suggestion.city].filter(Boolean).join(" · ") ||
@@ -266,17 +276,26 @@ export function SuggestionsQueue({
               />
             ) : (
               <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => setApprovingId(suggestion.id)}
-                  className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
-                >
-                  Add to map
-                </button>
+                {suggestion.kind === "no_tots" ? (
+                  <button
+                    onClick={() => resolve(suggestion.id)}
+                    className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
+                  >
+                    Checked it
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setApprovingId(suggestion.id)}
+                    className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-hover"
+                  >
+                    Add to map
+                  </button>
+                )}
                 <button
                   onClick={() => reject(suggestion.id)}
                   className="rounded-md px-2.5 py-1 text-xs text-muted hover:text-foreground"
                 >
-                  Reject
+                  Dismiss
                 </button>
               </div>
             )}

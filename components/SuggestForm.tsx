@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { POTATO_LABELS, type PotatoType } from "@/lib/database.types";
 
 const FIELD =
   "h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-foreground";
@@ -11,7 +10,6 @@ export function SuggestForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
-  const [potatoType, setPotatoType] = useState<PotatoType>("tater_tot");
   const [submitterName, setSubmitterName] = useState("");
   const [note, setNote] = useState("");
   // Honeypot: hidden from people, irresistible to naive bots. Anything that
@@ -36,7 +34,6 @@ export function SuggestForm({ onClose }: { onClose: () => void }) {
       name: name.trim(),
       address: address.trim() || null,
       city: city.trim() || null,
-      potato_type: potatoType,
       submitter_name: submitterName.trim() || null,
       note: note.trim() || null,
     });
@@ -76,7 +73,8 @@ export function SuggestForm({ onClose }: { onClose: () => void }) {
         <h2 className="text-lg font-semibold">Suggest a spot</h2>
         <p className="mt-1 text-sm text-muted">
           Know somewhere with tots worth trying? Tell us and we&rsquo;ll add it
-          to the list.
+          to the list. Tater tots only for now — the rest of the potato family
+          comes later.
         </p>
       </div>
 
@@ -95,37 +93,18 @@ export function SuggestForm({ onClose }: { onClose: () => void }) {
         />
       </div>
 
-      <div className="flex gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <label htmlFor="s-city" className="text-xs font-medium">
-            City or neighborhood
-          </label>
-          <input
-            id="s-city"
-            maxLength={80}
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Mission, SF"
-            className={FIELD}
-          />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <label htmlFor="s-type" className="text-xs font-medium">
-            What kind
-          </label>
-          <select
-            id="s-type"
-            value={potatoType}
-            onChange={(e) => setPotatoType(e.target.value as PotatoType)}
-            className={FIELD}
-          >
-            {(Object.keys(POTATO_LABELS) as PotatoType[]).map((type) => (
-              <option key={type} value={type}>
-                {POTATO_LABELS[type]}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="s-city" className="text-xs font-medium">
+          City or neighborhood
+        </label>
+        <input
+          id="s-city"
+          maxLength={80}
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Mission, SF"
+          className={FIELD}
+        />
       </div>
 
       <div className="flex flex-col gap-1">
